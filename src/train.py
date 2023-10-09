@@ -44,6 +44,16 @@ def train():
             initializer=params.model.initializer,
             alpha=params.model.alpha,
         )
+        model.build((None, 32,32,3))
+
+        optimizer = tf.optimizers.Adam(
+            learning_rate=params.train.learning_rate
+        )
+
+        model.compile(
+            optimizer=optimizer,
+            metrics=['commitment_loss', 'coeebook_loss', 'reconstruction_loss', 'total_loss']
+        )
 
         # Configure distributed training and test pipelines
         options = tf.data.Options()
