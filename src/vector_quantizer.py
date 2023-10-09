@@ -51,4 +51,10 @@ class VectorQuantizer(tf.keras.layers.Layer):
         # Reshape the quantized values back to the original input shape
         quantized = tf.reshape(quantized, input_shape)
 
-        return quantized, encoding_indices
+        commitment_loss = self.commitment_cost * tf.reduce_mean((inputs - tf.stop_gradient(quantized)) ** 2)
+        codebook_loss = tf.reduce_mean((tf.stop_gradient(inputs) - quantized) ** 2)
+
+        # Straight-through estimator.
+        quantized = inputs + tf.stop_gradient(quantized - inputs)
+
+        return quantized, encoding_indices, commitment_loss, codebook_loss

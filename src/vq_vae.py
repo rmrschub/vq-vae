@@ -75,19 +75,15 @@ class VectorQuantizedVAE(tf.keras.Model):
 
     def call(self, x, training=None, mask=None):
         z_e = self._encoder(x)
-        z_q, encoding_indices = self._vector_quantizer(z_e)
-        p_x_given_z_q = self._decoder(
-            self._straight_through_estimator([z_e, z_q])
-        )
+        z_q, encoding_indices, commitment_loss, codebook_loss = self._vector_quantizer(z_e)
+        p_x_given_z_q = self._decoder(z_q)
 
-        return z_e, z_q, encoding_indices, p_x_given_z_q
+        return z_e, z_q, encoding_indices, commitment_loss, codebook_loss, p_x_given_z_q
 
     def train_step(self, x):
         with tf.GradientTape(persistent=True, watch_accessed_variables=True) as tape:
-            z_e, z_q, encoding_indices, p_x_given_z_q = self(x, training=True)
-
-            commitment_loss = self.commitment_cost * tf.reduce_mean((z_e - tf.stop_gradient(z_q)) ** 2)
-            codebook_loss = tf.reduce_mean((tf.stop_gradient(z_e) - z_q) ** 2)
+            z_e, z_q, encoding_indices, commitment_loss, codebook_loss, p_x_given_z_q = self(x, training=True)
+           
             reconstruction_loss = -1.0 * p_x_given_z_q.log_prob(x) 
 
             total_loss = sum([commitment_loss, codebook_loss, reconstruction_loss])
