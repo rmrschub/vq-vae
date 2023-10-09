@@ -4,6 +4,7 @@ base:
   random_seed: 41
 
 model:
+  input_dims: (32, 32, 3)
   latent_dim: 256
   num_embeddings: 64 
   commitment_cost: 0.25
