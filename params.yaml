@@ -6,7 +6,7 @@ base:
 model:
   input_dims: [32, 32, 3]
   latent_dim: 256
-  num_embeddings: 64 
+  num_embeddings: 128 
   commitment_cost: 0.25
   initializer: uniform
   alpha: 0.2
@@ -20,7 +20,7 @@ volcano:
   queue: default
 
 train:
-  batch_size_per_replica: 512
+  batch_size_per_replica: 128
   epochs: 30
   learning_rate: 0.001
   verbosity: 1

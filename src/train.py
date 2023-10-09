@@ -64,17 +64,24 @@ def train():
 
         train_ds, test_ds = tfds.load('cifar10', split=['train','test'], as_supervised=True)
 
-        train_ds = train_ds.map(lambda image, label: tf.divide(tf.cast(image, tf.float32), 255)).cache()
+        train_ds = train_ds.map(lambda image, label: tf.cast(image, tf.float32))
+        normalizer = tfkl.Normalization()
+        normalizer.adapt(train_ds)
+
+        train_ds = train_ds.map(lambda image: normalizer(image))
+        train_ds = train.cache()
         train_ds = train_ds.shuffle(10 * global_batch_size)
         train_ds = train_ds.batch(global_batch_size)
         train_ds = train_ds.prefetch(tf.data.AUTOTUNE)
         train_ds = train_ds.with_options(options)
 
-        test_ds = test_ds.map(lambda image, label: tf.divide(tf.cast(image, tf.float32), 255)).cache()
-        test_ds = test_ds.shuffle(10 * global_batch_size)
-        test_ds = test_ds.batch(global_batch_size)
-        test_ds = test_ds.prefetch(tf.data.AUTOTUNE)
-        test_ds = test_ds.with_options(options)
+        # test_ds = test_ds.map(lambda image, label: tf.divide(tf.cast(image, tf.float32), 255))
+        # test_ds = test_ds.map(lambda image: tfkl.Normalization(mean=0.0, variance=1.0)(image))
+        # test_ds.cache()
+        # test_ds = test_ds.shuffle(10 * global_batch_size)
+        # test_ds = test_ds.batch(global_batch_size)
+        # test_ds = test_ds.prefetch(tf.data.AUTOTUNE)
+        # test_ds = test_ds.with_options(options)
 
     # Get current worker's task_type and task_id
     task_type, task_id = (
