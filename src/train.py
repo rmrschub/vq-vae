@@ -69,7 +69,7 @@ def train():
         normalizer.adapt(train_ds)
 
         train_ds = train_ds.map(lambda image: normalizer(image))
-        train_ds = train.cache()
+        train_ds = train_ds.cache()
         train_ds = train_ds.shuffle(10 * global_batch_size)
         train_ds = train_ds.batch(global_batch_size)
         train_ds = train_ds.prefetch(tf.data.AUTOTUNE)
