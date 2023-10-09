@@ -60,19 +60,8 @@ class VectorQuantizedVAE(tf.keras.Model):
                 tfkl.BatchNormalization(),
                 tfkl.LeakyReLU(alpha=0.2),
                 tfkl.Conv2DTranspose(filters=3, kernel_size=4, strides=2, padding='same', activation=None),      # 32x32
-                tfpl.DistributionLambda(
-                    make_distribution_fn=lambda t: tfd.Independent(
-                        distribution=tfd.Bernoulli(
-                            logits=t,
-                            dtype=tf.float32,
-                            validate_args=False,
-                            allow_nan_stats=True,
-                        ),
-                        reinterpreted_batch_ndims=3,
-                        validate_args=False,
-                        experimental_use_kahan_sum=False),
-                    name='bernoulli_likelihood'
-                )],
+                tfkl.Flatten(),
+                tfpl.IndependentBernoulli((32, 32, 3), tfd.Bernoulli.logits)],
             name='decoder', 
         )       
 
@@ -91,7 +80,7 @@ class VectorQuantizedVAE(tf.keras.Model):
 
             commitment_loss = self.commitment_cost * tf.reduce_mean((z_e - tf.stop_gradient(z_q)) ** 2)
             codebook_loss = tf.reduce_mean((tf.stop_gradient(z_e) - z_q) ** 2)
-            reconstruction_loss = p_x_given_z_q.log_prob(x) 
+            reconstruction_loss = -1.0 * p_x_given_z_q.log_prob(x) 
 
             total_loss = sum([commitment_loss, codebook_loss, reconstruction_loss])
        
