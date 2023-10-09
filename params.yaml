@@ -6,9 +6,9 @@ base:
 model:
   latent_dim: 256
   num_embeddings: 64 
-  commitment_cost: 0.25,
-  initializer: uniform,
-  alpha: 0.2,
+  commitment_cost: 0.25
+  initializer: uniform
+  alpha: 0.2
 
 volcano:
   job_id: 1

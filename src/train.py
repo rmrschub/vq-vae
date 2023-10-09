@@ -38,11 +38,11 @@ def train():
     with strategy.scope():
         # Define, build and compile model within strategy scope
         model = VectorQuantizedVAE(
-            latent_dim=int(params.model.latent_dim),
-            num_embeddings=int(params.model.num_embeddings),
-            commitment_cost=float(params.model.commitment_cost),
+            latent_dim=params.model.latent_dim,
+            num_embeddings=params.model.num_embeddings,
+            commitment_cost=params.model.commitment_cost,
             initializer=params.model.initializer,
-            alpha=float(params.model.alpha),
+            alpha=params.model.alpha,
         )
         model.build((None, 32, 32, 3))
 
