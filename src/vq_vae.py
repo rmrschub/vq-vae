@@ -100,5 +100,9 @@ class VectorQuantizedVAE(tf.keras.Model):
         self.reconstruction_loss_tracker.update_state(reconstruction_loss)
         self.total_loss_tracker.update_state(total_loss)    
 
-        return {m.name: m.result() for m in self.metrics}
-    
+        return {
+            "total_loss": self.total_loss_tracker.result(),
+            "reconstruction_loss": self.reconstruction_loss_tracker.result(),
+            "commitment_loss": self.commitment_loss_tracker.result(),
+            "codebook_loss": self.codebook_loss_tracker.result()
+        }
