@@ -13,9 +13,10 @@ tfd = tfp.distributions
 class VectorQuantizedVAE(tf.keras.Model):
 
     def __init__(self, **kwargs):
-        super(VectorQuantizedVAE, self).__init__(name="VectorQuantizedVAE")
+        super(VectorQuantizedVAE, self).__init__()
 
         # region: Set attributes
+        self.input_dims = kwargs['input_dims']
         self.latent_dim = kwargs['latent_dim']
         self.num_embeddings = kwargs['num_embeddings']
         self.commitment_cost = kwargs['commitment_cost']
@@ -31,6 +32,8 @@ class VectorQuantizedVAE(tf.keras.Model):
         # endregion
 
         # bx32x32x3
+        self._input_layer = tfkl.Input(shape=self.input_dims, name='input_layer')
+
         self._encoder = tf.keras.Sequential([
                 tfkl.Conv2D(filters=256, kernel_size=4, strides=2, padding='same'),         # bx16x16x256
                 tfkl.BatchNormalization(),
@@ -63,7 +66,12 @@ class VectorQuantizedVAE(tf.keras.Model):
                 tfkl.Flatten(),
                 tfpl.IndependentBernoulli((32, 32, 3), tfd.Bernoulli.logits)],
             name='decoder', 
-        )       
+        )
+
+        ## Re-Initialize Model with input_layer inside call method to setup all shape
+        input_shape = self._input_layer
+        output_shape = self.call(input_shape)
+        super(VectorQuantizedVAE, self).__init__(name="VectorQuantizedVAE", inputs=input_shape, outputs=output_shape)
 
     def call(self, x, training=None, mask=None):
         z_e = self._encoder(x)
@@ -76,7 +84,7 @@ class VectorQuantizedVAE(tf.keras.Model):
 
     def train_step(self, x):
         with tf.GradientTape(persistent=True, watch_accessed_variables=True) as tape:
-            z_e, z_q, encoding_indices, p_x_given_z_q = self.call(x, training=True)
+            z_e, z_q, encoding_indices, p_x_given_z_q = self(x, training=True)
 
             commitment_loss = self.commitment_cost * tf.reduce_mean((z_e - tf.stop_gradient(z_q)) ** 2)
             codebook_loss = tf.reduce_mean((tf.stop_gradient(z_e) - z_q) ** 2)
