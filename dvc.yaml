@@ -1,0 +1,29 @@
+stages:
+
+  prepare_volcano_job:
+    cmd: WORKER_NAME=${volcano.job_name}-${volcano.job_id}
+         QUEUE=${volcano.queue} 
+         MIN_NUM_WORKERS=${volcano.min_num_workers} 
+         MAX_NUM_WORKERS=${volcano.max_num_workers} 
+         NUM_GPUS_PER_WORKER=${volcano.num_gpus_per_worker}
+         WORKPLACE_PVC=${base.workplace_pvc}
+         WORKING_DIR=${base.working_dir}
+         bin/mo < src/volcano.tpl > src/volcano.yaml
+    deps:
+      - src/volcano.tpl
+    params:
+      - base
+      - volcano
+    outs:
+      - src/volcano.yaml
+
+  schedule_training:
+    cmd: 
+      - kubectl apply -f src/volcano.yaml
+    deps:
+      - src/train.py
+      - src/volcano.yaml
+    params:
+      - base
+      - model
+      - train

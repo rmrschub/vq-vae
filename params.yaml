@@ -1,0 +1,25 @@
+base:
+  workplace_pvc: resc01-pvc
+  working_dir: varroa_classifier_distributed
+  random_seed: 41
+
+model:
+  latent_dim: 256
+  num_embeddings: 64 
+  commitment_cost: 0.25,
+  initializer: 'uniform',
+  alpha: 0.2,
+
+volcano:
+  job_id: 1
+  job_name: cifar10-vqVae
+  min_num_workers: 1
+  max_num_workers: 2
+  num_gpus_per_worker: 5
+  queue: default
+
+train:
+  batch_size_per_replica: 512
+  epochs: 30
+  learning_rate: 0.001
+  verbosity: 1
