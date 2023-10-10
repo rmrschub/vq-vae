@@ -9,7 +9,7 @@ model:
   num_embeddings: 128 
   commitment_cost: 0.25
   initializer: uniform
-  bernstein_order: 9
+  bernstein_order: 3
   alpha: 0.2
 
 volcano:
@@ -21,7 +21,7 @@ volcano:
   queue: default
 
 train:
-  batch_size_per_replica: 512
-  epochs: 30
+  batch_size_per_replica: 256
+  epochs: 50
   learning_rate: 0.001
   verbosity: 1
