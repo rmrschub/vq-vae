@@ -61,9 +61,14 @@ class VectorQuantizedVAE(tf.keras.Model):
         self._decoder = tf.keras.Sequential([
                 ResidualBlock(filters=self.latent_dim, kernel_size=(3, 3), stride=(1, 1), alpha=0.2),       # 8x8xD
                 ResidualBlock(filters=self.latent_dim, kernel_size=(3, 3), stride=(1, 1), alpha=0.2),
-                tfkl.Conv2DTranspose(filters=self.latent_dim, kernel_size=4, strides=2, padding='same'),    # 16x16x256
+                tfkl.Conv2DTranspose(filters=self.latent_dim, kernel_size=4, strides=1, padding='same'),    # 16x16x256
                 tfkl.BatchNormalization(),
                 tfkl.LeakyReLU(alpha=0.2),
+                tfkl.Conv2DTranspose(filters=256, kernel_size=4, strides=2, padding='same')],                         # bx32x32x256
+            name='decoder'
+        )
+
+        self._likelihood = tf.keras.Sequential([
                 tfkl.Conv2DTranspose(
                     filters=3 * (self.bernstein_order + 1), 
                     kernel_size=4, 
@@ -94,7 +99,7 @@ class VectorQuantizedVAE(tf.keras.Model):
                         validate_args=False,
                         experimental_use_kahan_sum=False),
                     name='bernstein_polynomial_likelihood')],
-            name='decoder', 
+            name='likelihood', 
         )
 
         ## Re-Initialize Model with input_layer inside call method to setup all shape
@@ -105,7 +110,7 @@ class VectorQuantizedVAE(tf.keras.Model):
     def call(self, x, training=None, mask=None):
         z_e = self._encoder(x)
         z_q, encoding_indices, commitment_loss, codebook_loss = self._vector_quantizer(z_e)
-        p_x_given_z_q = self._decoder(z_q)
+        p_x_given_z_q = self._likelihood(self._decoder(z_q))
 
         return z_e, z_q, encoding_indices, commitment_loss, codebook_loss, p_x_given_z_q
 
