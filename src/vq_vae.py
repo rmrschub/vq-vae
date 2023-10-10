@@ -10,6 +10,7 @@ tfpl = tfp.layers
 tfd = tfp.distributions
 
 
+@tf.keras.saving.register_keras_serializable()
 class VectorQuantizedVAE(tf.keras.Model):
 
     def __init__(self, **kwargs):
@@ -21,6 +22,7 @@ class VectorQuantizedVAE(tf.keras.Model):
         self.num_embeddings = kwargs['num_embeddings']
         self.commitment_cost = kwargs['commitment_cost']
         self.initializer = kwargs['initializer']
+        self.bernstein_order = kwargs['bernstein_order']
         self.alpha = kwargs['alpha']
         # endregion
 
@@ -59,12 +61,39 @@ class VectorQuantizedVAE(tf.keras.Model):
         self._decoder = tf.keras.Sequential([
                 ResidualBlock(filters=self.latent_dim, kernel_size=(3, 3), stride=(1, 1), alpha=0.2),       # 8x8xD
                 ResidualBlock(filters=self.latent_dim, kernel_size=(3, 3), stride=(1, 1), alpha=0.2),
-                tfkl.Conv2DTranspose(filters=self.latent_dim, kernel_size=4, strides=1, padding='same'),    # 16x16x256
+                tfkl.Conv2DTranspose(filters=self.latent_dim, kernel_size=4, strides=2, padding='same'),    # 16x16x256
                 tfkl.BatchNormalization(),
                 tfkl.LeakyReLU(alpha=0.2),
-                tfkl.Conv2DTranspose(filters=3, kernel_size=4, strides=2, padding='same', activation=None),      # 32x32
-                tfkl.Flatten(),
-                tfpl.IndependentBernoulli((32, 32, 3), tfd.Bernoulli.logits)],
+                tfkl.Conv2DTranspose(
+                    filters=3 * (self.bernstein_order + 1), 
+                    kernel_size=4, 
+                    strides=1, 
+                    padding='same', 
+                    activation=None),      
+                tfkl.Reshape(
+                    [32, 32, 3, self.bernstein_order + 1, ],
+                    name='bernstein_polynomial_likelihood_params'
+                ),
+                tfpl.DistributionLambda(
+                    make_distribution_fn=lambda t: tfd.Independent(
+                        distribution=tfd.MixtureSameFamily(
+                            mixture_distribution=tfd.Categorical(
+                                logits=t,
+                                validate_args=False,
+                                allow_nan_stats=False,
+                            ),
+                            components_distribution=tfd.Kumaraswamy(
+                                concentration1=tf.range(0, self.bernstein_order + 1, delta=1, dtype=float) + 1.0,
+                                concentration0=self.bernstein_order - tf.range(0, self.bernstein_order + 1, delta=1, dtype=float) + 1.0,
+                                validate_args=False,
+                                allow_nan_stats=False,
+                            ),
+                            validate_args=False,
+                            allow_nan_stats=False),
+                        reinterpreted_batch_ndims=3,
+                        validate_args=False,
+                        experimental_use_kahan_sum=False),
+                    name='bernstein_polynomial_likelihood')],
             name='decoder', 
         )
 

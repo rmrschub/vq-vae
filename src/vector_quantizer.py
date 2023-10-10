@@ -27,7 +27,7 @@ class VectorQuantizer(tf.keras.layers.Layer):
             trainable=True
         )
 
-        super(VectorQuantizer, self).build(input_shape)
+        #super(VectorQuantizer, self).build(input_shape)
 
     def call(self, inputs):
         # Flatten the inputs keeping `embedding_dim` intact.

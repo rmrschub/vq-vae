@@ -9,6 +9,7 @@ model:
   num_embeddings: 128 
   commitment_cost: 0.25
   initializer: uniform
+  bernstein_order: 9
   alpha: 0.2
 
 volcano:

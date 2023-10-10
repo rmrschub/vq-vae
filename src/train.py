@@ -43,6 +43,7 @@ def train():
             num_embeddings=params.model.num_embeddings,
             commitment_cost=params.model.commitment_cost,
             initializer=params.model.initializer,
+            bernstein_order=params.model.bernstein_order,
             alpha=params.model.alpha,
         )
         model.build((None, 32, 32, 3))
@@ -64,9 +65,6 @@ def train():
 
         train_ds, test_ds = tfds.load('cifar10', split=['train','test'], as_supervised=True)
         train_ds = train_ds.map(lambda image, label: tf.divide(tf.cast(image, tf.float32), 255.0))
-        # normalizer = tfkl.Normalization()
-        # normalizer.adapt(train_ds)
-        # train_ds = train_ds.map(lambda image: normalizer(image))
         train_ds = train_ds.cache()
         train_ds = train_ds.shuffle(10 * global_batch_size)
         train_ds = train_ds.batch(global_batch_size)
