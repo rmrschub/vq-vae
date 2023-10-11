@@ -12,6 +12,7 @@ class VectorQuantizer(tf.keras.Model):
         super(VectorQuantizer, self).__init__(name='VectorQuantizer')
 
         # region: Set attributes
+        self.random_seed=kwargs['random_seed']
         self.latent_dim = kwargs['latent_dim']
         self.num_embeddings = kwargs['num_embeddings']
         # endregion
@@ -22,7 +23,7 @@ class VectorQuantizer(tf.keras.Model):
             embeddings_initializer=tf.keras.initializers.RandomUniform(
                 minval=(-1.0 / self.num_embeddings), 
                 maxval=(1.0 / self.num_embeddings),
-                seed=42,
+                seed=self.random_seed,
             ),
             embeddings_regularizer=None,
             activity_regularizer=None,
@@ -53,7 +54,10 @@ class VectorQuantizer(tf.keras.Model):
         codebook_indices = tf.argmin(distances, axis=1)
         quantized = self._codebook(codebook_indices)
         
-        # Reshape the quantized values back to the original input shape
+        # Reshape the quantized values back to the original input shape (aka encoder output)
         quantized = tf.reshape(quantized, input_shape)
+
+        # Reshape the codebook_indices back to the original input shape (aka encoder output)
+        codebook_indices = tf.reshape(codebook_indices, input_shape[:-1])
 
         return codebook_indices, quantized

@@ -43,9 +43,9 @@ def train():
             num_embeddings=params.model.num_embeddings,
             commitment_cost_factor=params.model.commitment_cost_factor,
             quantization_loss_factor=params.model.quantization_loss_factor,
-            initializer=params.model.initializer,
             bernstein_order=params.model.bernstein_order,
             alpha=params.model.alpha,
+            random_seed=params.base.random_seed
         )
         model.build((None, 32, 32, 3))
 

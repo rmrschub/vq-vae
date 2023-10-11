@@ -4,6 +4,7 @@ import numpy as np
 
 from residual_block import ResidualBlock
 from vector_quantizer import VectorQuantizer
+from likelihoods import BernsteinLikelihood
 
 tfkl = tf.keras.layers
 tfpl = tfp.layers
@@ -24,6 +25,7 @@ class VectorQuantizedVAE(tf.keras.Model):
         self.quantization_loss_factor = kwargs['quantization_loss_factor']
         self.bernstein_order = kwargs['bernstein_order']
         self.alpha = kwargs['alpha']
+        self.random_seed = kwargs['random_seed']
         # endregion
 
         # region Define loss trackers
@@ -35,61 +37,31 @@ class VectorQuantizedVAE(tf.keras.Model):
 
         self._encoder = tf.keras.Sequential([
                 tfkl.Conv2D(filters=256, kernel_size=4, strides=2, padding='same'),
-                tfkl.BatchNormalization(),
-                tfkl.LeakyReLU(alpha=0.2),
-                tfkl.Conv2D(filters=self.latent_dim, kernel_size=4, strides=1, padding='same'),
-                ResidualBlock(filters=self.latent_dim, kernel_size=(3, 3), stride=(1, 1), alpha=self.alpha),
-                ResidualBlock(filters=self.latent_dim, kernel_size=(3, 3), stride=(1, 1), alpha=self.alpha)],
+                # tfkl.BatchNormalization(),
+                # tfkl.LeakyReLU(alpha=0.2),
+                tfkl.Conv2D(filters=256, kernel_size=4, strides=2, padding='same'),
+                ResidualBlock(filters=256, kernel_size=(3, 3), stride=(1, 1), alpha=self.alpha),
+                ResidualBlock(filters=256, kernel_size=(3, 3), stride=(1, 1), alpha=self.alpha),
+                tfkl.Conv2D(filters=self.latent_dim, kernel_size=1, strides=1, padding='same')],
             name='encoder', 
         )
 
         self._quantizer = VectorQuantizer(
             num_embeddings=self.num_embeddings,
             latent_dim=self.latent_dim,
+            random_seed=self.random_seed
         )
 
         self._decoder = tf.keras.Sequential([
-                ResidualBlock(filters=self.latent_dim, kernel_size=(3, 3), stride=(1, 1), alpha=0.2),
-                ResidualBlock(filters=self.latent_dim, kernel_size=(3, 3), stride=(1, 1), alpha=0.2),
-                tfkl.Conv2DTranspose(filters=self.latent_dim, kernel_size=4, strides=1, padding='same'),
-                tfkl.BatchNormalization(),
-                tfkl.LeakyReLU(alpha=0.2),
-                tfkl.Conv2DTranspose(filters=256, kernel_size=4, strides=2, padding='same')],
+                tfkl.Conv2D(filters=256, kernel_size=1, strides=1, padding='same'),
+                ResidualBlock(filters=256, kernel_size=(3, 3), stride=(1, 1), alpha=0.2),
+                ResidualBlock(filters=256, kernel_size=(3, 3), stride=(1, 1), alpha=0.2),
+                tfkl.Conv2DTranspose(filters=256, kernel_size=4, strides=2, padding='same'),
+                # tfkl.BatchNormalization(),
+                # tfkl.LeakyReLU(alpha=0.2),
+                tfkl.Conv2DTranspose(filters=256, kernel_size=4, strides=2, padding='same'),
+                BernsteinLikelihood(bernstein_order=self.bernstein_order)],
             name='decoder'
-        )
-
-        self._likelihood = tf.keras.Sequential([
-                tfkl.Conv2DTranspose(
-                    filters=3 * (self.bernstein_order + 1), 
-                    kernel_size=4, 
-                    strides=1, 
-                    padding='same', 
-                    activation=None),      
-                tfkl.Reshape(
-                    [32, 32, 3, self.bernstein_order + 1, ],
-                    name='bernstein_polynomial_likelihood_params'
-                ),
-                tfpl.DistributionLambda(
-                    make_distribution_fn=lambda t: tfd.Independent(
-                        distribution=tfd.MixtureSameFamily(
-                            mixture_distribution=tfd.Categorical(
-                                logits=t,
-                                validate_args=False,
-                                allow_nan_stats=False,
-                            ),
-                            components_distribution=tfd.Kumaraswamy(
-                                concentration1=tf.range(0, self.bernstein_order + 1, delta=1, dtype=float) + 1.0,
-                                concentration0=self.bernstein_order - tf.range(0, self.bernstein_order + 1, delta=1, dtype=float) + 1.0,
-                                validate_args=False,
-                                allow_nan_stats=False,
-                            ),
-                            validate_args=False,
-                            allow_nan_stats=False),
-                        reinterpreted_batch_ndims=3,
-                        validate_args=False,
-                        experimental_use_kahan_sum=False),
-                    name='bernstein_polynomial_likelihood')],
-            name='likelihood', 
         )
 
     def call(self, inputs, training=None, mask=None):
@@ -98,9 +70,7 @@ class VectorQuantizedVAE(tf.keras.Model):
 
         codebook_indices, z_q = self._quantizer(z_e)
 
-        p_x_given_z_q = self._likelihood(
-            self._decoder(z_e + tf.stop_gradient(z_q - z_e))
-        )
+        p_x_given_z_q = self._decoder(z_e + tf.stop_gradient(z_q - z_e))
 
         return z_e, codebook_indices, z_q, p_x_given_z_q
 
