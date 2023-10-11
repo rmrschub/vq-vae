@@ -5,56 +5,55 @@ tfkl = tf.keras.layers
 
 
 @tf.keras.saving.register_keras_serializable()
-class VectorQuantizer(tf.keras.layers.Layer):
+class VectorQuantizer(tf.keras.Model):
     
     def __init__(self, **kwargs):
+
         super(VectorQuantizer, self).__init__(name='VectorQuantizer')
 
         # region: Set attributes
-        self.embedding_dim = kwargs['embedding_dim']
+        self.latent_dim = kwargs['latent_dim']
         self.num_embeddings = kwargs['num_embeddings']
-        self.commitment_cost = kwargs['commitment_cost']
-        self.initializer = kwargs['initializer'] 
         # endregion
 
-    def build(self, input_shape):
-
-        # region: Initialize the embeddings which we will quantize.
-        self.embeddings = self.add_weight(
-            name='embeddings',
-            shape=(self.embedding_dim, self.num_embeddings, ),
-            initializer=tf.keras.initializers.RandomUniform(minval=0.0, maxval=1.0),
+        self._codebook = tfkl.Embedding(
+            self.num_embeddings,
+            self.latent_dim,
+            embeddings_initializer=tf.keras.initializers.RandomUniform(
+                minval=(-1.0 / self.num_embeddings), 
+                maxval=(1.0 / self.num_embeddings),
+                seed=42,
+            ),
+            embeddings_regularizer=None,
+            activity_regularizer=None,
+            embeddings_constraint=None,
+            mask_zero=False,
+            input_length=None,
+            sparse=False,
             trainable=True
         )
 
-        #super(VectorQuantizer, self).build(input_shape)
+    def build(self, input_shape):
+
+        self._codebook.build((None, ))
 
     def call(self, inputs):
-        # Flatten the inputs keeping `embedding_dim` intact.
+
+        # Flatten the inputs keeping `latent_dim` intact.
         input_shape = tf.shape(inputs)
-        flattened_inputs = tf.reshape(inputs, [-1, self.embedding_dim])
+        flattened_inputs = tf.reshape(inputs, [-1, self.latent_dim])
         
         # Calculate L2-normalized distance between the inputs and the codes.
-        distances = (
-            tf.reduce_sum(flattened_inputs ** 2, axis=1, keepdims=True)
-            + tf.reduce_sum(self.embeddings ** 2, axis=0, keepdims=True)
-            - 2 * tf.matmul(flattened_inputs, self.embeddings)
-        )
+        distances = tf.reduce_sum(
+            (tf.expand_dims(flattened_inputs, 1)-tf.expand_dims(self._codebook.weights[0], 0))**2, 
+            2
+        )  
 
-        # Retrieve encodings
-        encoding_indices = tf.argmin(distances, axis=1)
-        encodings = tf.one_hot(encoding_indices, self.num_embeddings)
-
-        # Quantization
-        quantized = tf.matmul(encodings, self.embeddings, transpose_b=True)
-
+        # Retrieve codebook indices and quantized vectors
+        codebook_indices = tf.argmin(distances, axis=1)
+        quantized = self._codebook(codebook_indices)
+        
         # Reshape the quantized values back to the original input shape
         quantized = tf.reshape(quantized, input_shape)
 
-        commitment_loss = self.commitment_cost * tf.reduce_mean((inputs - tf.stop_gradient(quantized)) ** 2)
-        codebook_loss = tf.reduce_mean((tf.stop_gradient(inputs) - quantized) ** 2)
-
-        # Straight-through estimator.
-        quantized = inputs + tf.stop_gradient(quantized - inputs)
-
-        return quantized, encoding_indices, commitment_loss, codebook_loss
+        return codebook_indices, quantized

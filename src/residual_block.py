@@ -6,7 +6,7 @@ tfkl = tf.keras.layers
 
 
 @tf.keras.saving.register_keras_serializable()
-class ResidualBlock(tf.keras.layers.Layer):
+class ResidualBlock(tf.keras.Model):
 
     def __init__(self, **kwargs):
     
@@ -19,7 +19,7 @@ class ResidualBlock(tf.keras.layers.Layer):
         self.alpha = kwargs['alpha']               # 0.2
         # endregion
 
-        # region: Define layers
+        # Define layers
         self._residual_block = tf.keras.Sequential([
             tfkl.Conv2D(
                 filters=self.filters, 
@@ -40,6 +40,6 @@ class ResidualBlock(tf.keras.layers.Layer):
         )
         #endregion
 
-    def call(self, x, **kwargs):
+    def call(self, inputs):
 
-        return x + self._residual_block(x)
+        return inputs + self._residual_block(inputs)
