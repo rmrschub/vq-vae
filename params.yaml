@@ -21,7 +21,7 @@ volcano:
   queue: default
 
 train:
-  batch_size_per_replica: 128
+  batch_size_per_replica: 512
   epochs: 50
   learning_rate: 3e-4 
   verbosity: 1
