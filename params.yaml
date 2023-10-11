@@ -9,7 +9,7 @@ model:
   num_embeddings: 64 
   commitment_cost_factor: 0.25
   quantization_loss_factor: 0.99
-  bernstein_order: 3
+  bernstein_order: 13
   alpha: 0.2
 
 volcano:
