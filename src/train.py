@@ -65,7 +65,8 @@ def train():
         global_batch_size = params.train.batch_size_per_replica * strategy.num_replicas_in_sync
 
         train_ds, test_ds = tfds.load('cifar10', split=['train','test'], as_supervised=True)
-        train_ds = train_ds.map(lambda image, label: tf.divide(tf.cast(image, tf.float32), 255.0))
+        # train_ds = train_ds.map(lambda image, label: tf.divide(tf.cast(image, tf.float32), 255.0))            # [0 - 1] range
+        train_ds = train_ds.map(lambda image, label: (tf.divide(tf.cast(image, tf.float32), 127.5)) - 1.0)      # [-1 to 1] range
         train_ds = train_ds.cache()
         train_ds = train_ds.shuffle(10 * global_batch_size)
         train_ds = train_ds.batch(global_batch_size)
@@ -111,8 +112,8 @@ def train():
         )
 
     # Save trained model(s)
-    write_model_path = 'model_{}'.format(task_id) if task_id==0 else 'tmp/model_{}'.format(task_id)
-    model.save(write_model_path)
+    write_model_path = 'model_{}_weights.h5'.format(task_id) if task_id==0 else 'tmp/model_{}_weights.h5'.format(task_id)
+    model.save_weights(write_model_path)
 
 if __name__ == "__main__":
     train()
