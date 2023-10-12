@@ -5,7 +5,7 @@ base:
 
 model:
   input_dims: [32, 32, 3]
-  latent_dim: 65536
+  latent_dim: 4096
   num_embeddings: 64 
   commitment_cost_factor: 0.25
   quantization_loss_factor: 0.99
