@@ -60,7 +60,8 @@ class VectorQuantizedVAE(tf.keras.Model):
                 # tfkl.BatchNormalization(),
                 # tfkl.LeakyReLU(alpha=0.2),
                 tfkl.Conv2DTranspose(filters=256, kernel_size=4, strides=2, padding='same'),
-                BernsteinLikelihood(bernstein_order=self.bernstein_order)],
+                tfkl.Conv2DTranspose(filters=3, kernel_size=4, strides=1, padding='same')],
+                # BernsteinLikelihood(bernstein_order=self.bernstein_order)],
             name='decoder'
         )
 
@@ -78,9 +79,13 @@ class VectorQuantizedVAE(tf.keras.Model):
         with tf.GradientTape(persistent=True, watch_accessed_variables=True) as tape:
             z_e, codebook_indices, z_q, p_x_given_z_q = self(x, training=True)
 
-            commitment_loss = tf.reduce_mean((z_e - tf.stop_gradient(z_q)) ** 2)
-            codebook_loss = tf.reduce_mean((tf.stop_gradient(z_e) - z_q) ** 2)
-            reconstruction_loss = -1.0 * p_x_given_z_q.log_prob(x) 
+            # commitment_loss = tf.reduce_mean((z_e - tf.stop_gradient(z_q)) ** 2)
+            # codebook_loss = tf.reduce_mean((tf.stop_gradient(z_e) - z_q) ** 2)
+            # reconstruction_loss = -1.0 * p_x_given_z_q.log_prob(x) 
+            commitment_loss = tf.math.square(z_e - tf.stop_gradient(z_q))
+            codebook_loss = tf.math.square(tf.stop_gradient(z_e) - z_q)
+            reconstruction_loss = tf.keras.losses.MeanSquaredError()(x, p_x_given_z_q)
+
             total_loss = sum([
                 self.commitment_cost_factor * commitment_loss, 
                 self.quantization_loss_factor * codebook_loss, 
