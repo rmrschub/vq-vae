@@ -82,9 +82,9 @@ class VectorQuantizedVAE(tf.keras.Model):
             # commitment_loss = tf.reduce_mean((z_e - tf.stop_gradient(z_q)) ** 2)
             # codebook_loss = tf.reduce_mean((tf.stop_gradient(z_e) - z_q) ** 2)
             # reconstruction_loss = -1.0 * p_x_given_z_q.log_prob(x) 
-            commitment_loss = tf.math.square(z_e - tf.stop_gradient(z_q))
-            codebook_loss = tf.math.square(tf.stop_gradient(z_e) - z_q)
-            reconstruction_loss = tf.keras.losses.MeanSquaredError(reduction=tf.keras.losses.Reduction.NONE)(x, p_x_given_z_q)
+            commitment_loss = tf.reduce_mean(tf.math.square(z_e - tf.stop_gradient(z_q)))
+            codebook_loss = tf.reduce_mean(tf.math.square(tf.stop_gradient(z_e) - z_q))
+            reconstruction_loss = tf.reduce_mean(tf.keras.losses.MeanSquaredError(reduction=tf.keras.losses.Reduction.NONE)(x, p_x_given_z_q))
 
             total_loss = sum([
                 self.commitment_cost_factor * commitment_loss, 
