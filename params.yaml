@@ -5,7 +5,7 @@ base:
 
 model:
   input_dims: [32, 32, 3]
-  latent_dim: 4096
+  latent_dim: 2048
   num_embeddings: 64 
   commitment_cost_factor: 0.25
   quantization_loss_factor: 0.99
@@ -21,7 +21,7 @@ volcano:
   queue: default
 
 train:
-  batch_size_per_replica: 512
+  batch_size_per_replica: 256
   epochs: 100
   learning_rate: 3e-4 
   verbosity: 1
