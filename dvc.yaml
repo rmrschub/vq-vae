@@ -21,6 +21,7 @@ stages:
     cmd: 
       - kubectl apply -f src/volcano.yaml
     deps:
+      - params.yaml
       - src/train.py
       - src/vq_vae.py
       - src/residual_block.py
@@ -31,12 +32,3 @@ stages:
       - model
       - train
 
-# plots:
-#   - train_loss:
-#     x: epoch
-#     y:
-#       dvclive/plots/metrics/train/codebook_loss.csv: [codebook_loss]
-#       dvclive/plots/metrics/train/commitment_loss.csv: [commitment_loss]
-#       dvclive/plots/metrics/train/reconstruction_loss.csv: [reconstruction_loss]
-#       dvclive/plots/metrics/train/total_loss.csv: [total_loss]
-#     title: Training Losses
