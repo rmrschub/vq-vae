@@ -32,3 +32,10 @@ stages:
       - model
       - train
 
+
+plots:
+  - step vs codebook_loss:
+      template: simple
+      x: step
+      y:
+        dvclive/plots/metrics/train/codebook_loss.tsv: codebook_loss
