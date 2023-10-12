@@ -31,3 +31,12 @@ stages:
       - model
       - train
 
+plots:
+  train_loss:
+    x: epoch
+    y:
+      dvclive/plots/metrics/train/codebook_loss.csv: [codebook_loss]
+      dvclive/plots/metrics/train/commitment_loss.csv: [commitment_loss]
+      dvclive/plots/metrics/train/reconstruction_loss.csv: [reconstruction_loss]
+      dvclive/plots/metrics/train/total_loss.csv: [total_loss]
+    title: Training Losses
