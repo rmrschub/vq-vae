@@ -56,7 +56,7 @@ def train():
 
         model.compile(
             optimizer=optimizer,
-            metrics=['commitment_loss', 'codebook_loss', 'reconstruction_loss', 'triplet_loss', 'total_loss']
+            metrics=['commitment_loss', 'codebook_loss', 'reconstruction_loss', 'triplet_loss', 'triplet_ham_loss', 'total_loss']
         )
 
         # Configure distributed training and test pipelines

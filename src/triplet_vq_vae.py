@@ -36,6 +36,7 @@ class TripletVectorQuantizedVAE(VectorQuantizedVAE):
         # region: Define loss trackers
 
         self.triplet_loss_tracker = tf.keras.metrics.Mean(name="triplet_loss")
+        self.triplet_ham_loss_tracker = tf.keras.metrics.Mean(name="triplet_ham_loss")
         
         # endregion
         
@@ -48,7 +49,24 @@ class TripletVectorQuantizedVAE(VectorQuantizedVAE):
             # get all embeddings
             z_e, codebook_indices, z_q, p_x_given_z_q = self(imgs, training=True)
 
-            # region: Compute triplet loss
+            # region: Compute triplet loss on codebook indices
+            ham_distances = self.pairwise_ham_distance(codebook_indices)
+            anchor_positive_ham_dist = tf.expand_dims(ham_distances, 2)
+            anchor_negative_ham_dist = tf.expand_dims(ham_distances, 1)
+            triplet_ham_loss = tf.cast(anchor_positive_ham_dist - anchor_negative_ham_dist + self.ham_margin, dtype=tf.float32)
+            mask = self.get_triplet_mask(labels)
+            mask = tf.cast(mask, dtype=tf.float32)
+            triplet_ham_loss = tf.cast(tf.multiply(mask, triplet_ham_loss), dtype=tf.float32)
+            triplet_ham_loss = tf.maximum(triplet_ham_loss, 0.0)
+            valid_triplets = tf.cast(tf.greater(triplet_ham_loss, 1e-16), dtype=tf.float32)
+            num_positive_triplets = tf.reduce_sum(valid_triplets)
+            num_valid_triplets = tf.reduce_sum(mask)
+            fraction_positive_triplets = num_positive_triplets / (num_valid_triplets + 1e-16)
+            triplet_ham_loss = tf.reduce_sum(triplet_ham_loss) / (num_positive_triplets + 1e-16)
+
+            # endregion
+
+            # region: Compute triplet loss of latent representations
             # compute pairwise distance matrix of latent representations
             distances = self.pairwise_distances(z_q)
 
@@ -84,7 +102,7 @@ class TripletVectorQuantizedVAE(VectorQuantizedVAE):
             codebook_loss = self.quantization_loss_factor * (tf.reduce_mean(tf.math.square(tf.stop_gradient(z_e) - z_q)))
             reconstruction_loss = tf.reduce_mean(tf.keras.losses.MeanSquaredError(reduction=tf.keras.losses.Reduction.NONE)(imgs, p_x_given_z_q))
 
-            total_loss = sum([commitment_loss, codebook_loss, reconstruction_loss, triplet_loss])
+            total_loss = sum([commitment_loss, codebook_loss, reconstruction_loss, triplet_loss, triplet_ham_loss])
 
         grads = tape.gradient(total_loss, self.trainable_variables)
         self.optimizer.apply_gradients(zip(grads, self.trainable_variables))
@@ -93,15 +111,35 @@ class TripletVectorQuantizedVAE(VectorQuantizedVAE):
         self.codebook_loss_tracker.update_state(codebook_loss)
         self.reconstruction_loss_tracker.update_state(reconstruction_loss)
         self.triplet_loss_tracker.update_state(triplet_loss)
+        self.triplet_ham_loss_tracker.update_state(triplet_ham_loss)
         self.total_loss_tracker.update_state(total_loss)
 
         return {
             "total_loss": self.total_loss_tracker.result(),
             "triplet_loss": self.triplet_loss_tracker.result(),
+            "triplet_ham_loss": self.triplet_ham_loss_tracker.result(),
             "reconstruction_loss": self.reconstruction_loss_tracker.result(),
             "commitment_loss": self.commitment_loss_tracker.result(),
             "codebook_loss": self.codebook_loss_tracker.result()
         }
+
+    def pairwise_ham_distance(self, inputs):
+
+        distances = tf.math.divide_no_nan(
+            tf.reduce_sum(
+                tf.cast(
+                    tf.not_equal(
+                        tf.expand_dims(tf.reshape(inputs, (-1, tf.math.reduce_prod(tf.shape(inputs)[1:]))), 1),
+                        tf.expand_dims(tf.reshape(inputs, (-1, tf.math.reduce_prod(tf.shape(inputs)[1:]))), 0)
+                    ),
+                    tf.float32
+                ),
+            2),  
+            len(a)
+        )
+
+        return distances
+
 
     def pairwise_distances(self, inputs):
       
