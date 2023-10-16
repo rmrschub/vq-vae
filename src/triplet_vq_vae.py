@@ -135,7 +135,7 @@ class TripletVectorQuantizedVAE(VectorQuantizedVAE):
                     tf.float32
                 ),
             2),  
-            tf.cast(tf.math.reduce_prod(tf.shape(a)[1:]), tf.float32)
+            tf.cast(tf.math.reduce_prod(tf.shape(inputs)[1:]), tf.float32)
         )
 
         return distances
