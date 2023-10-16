@@ -135,7 +135,7 @@ class TripletVectorQuantizedVAE(VectorQuantizedVAE):
                     tf.float32
                 ),
             2),  
-            len(a)
+            len(inputs)
         )
 
         return distances
