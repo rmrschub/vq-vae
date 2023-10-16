@@ -18,30 +18,37 @@ class VectorQuantizedVAE(tf.keras.Model):
         super(VectorQuantizedVAE, self).__init__()
 
         # region: Set attributes
-        self.input_dims = kwargs['input_dims']
-        self.latent_dim = kwargs['latent_dim']
-        self.num_embeddings = kwargs['num_embeddings']
-        self.commitment_cost_factor = kwargs['commitment_cost_factor']
-        self.quantization_loss_factor = kwargs['quantization_loss_factor']
-        self.bernstein_order = kwargs['bernstein_order']
-        self.alpha = kwargs['alpha']
-        self.random_seed = kwargs['random_seed']
+        # input_dims
+        # latent_dim
+        # num_embeddings
+        # commitment_cost_factor
+        # quantization_loss_factor
+        # bernstein_order
+        # alpha
+        # random_seed
+
+        self.__dict__.update(kwargs)
+
         # endregion
 
         # region Define loss trackers
+
         self.commitment_loss_tracker = tf.keras.metrics.Mean(name="commitment_loss")
         self.codebook_loss_tracker = tf.keras.metrics.Mean(name="codebook_loss")
         self.reconstruction_loss_tracker = tf.keras.metrics.Mean(name="reconstruction_loss")
         self.total_loss_tracker = tf.keras.metrics.Mean(name="total_loss")
+
         # endregion
+
+        # region: Define network components
 
         self._encoder = tf.keras.Sequential([
                 tfkl.Conv2D(filters=256, kernel_size=4, strides=2, padding='same'),
                 # tfkl.BatchNormalization(),
                 # tfkl.LeakyReLU(alpha=0.2),
                 tfkl.Conv2D(filters=256, kernel_size=4, strides=2, padding='same'),
-                ResidualBlock(filters=256, kernel_size=(3, 3), stride=(1, 1), alpha=self.alpha),
-                ResidualBlock(filters=256, kernel_size=(3, 3), stride=(1, 1), alpha=self.alpha),
+                ResidualBlock(filters=256, kernel_size=(3, 3), stride=(1, 1), alpha=0.2),
+                ResidualBlock(filters=256, kernel_size=(3, 3), stride=(1, 1), alpha=0.2),
                 tfkl.Conv2D(filters=self.latent_dim, kernel_size=1, strides=1, padding='same')],
             name='encoder', 
         )
@@ -64,6 +71,8 @@ class VectorQuantizedVAE(tf.keras.Model):
                 # BernsteinLikelihood(bernstein_order=self.bernstein_order)],
             name='decoder'
         )
+
+        # endregion
 
     def call(self, inputs, training=None, mask=None):
 

@@ -13,10 +13,13 @@ class ResidualBlock(tf.keras.Model):
         super(ResidualBlock, self).__init__()
 
         # region: Set attributes
-        self.filters = kwargs['filters']
-        self.kernel_size= kwargs['kernel_size']    # (3, 3)
-        self.stride = kwargs['stride']             # (1, 1)
-        self.alpha = kwargs['alpha']               # 0.2
+        # filter
+        # kernel_size
+        # stride
+        # alpha
+
+        self.__dict__.update(kwargs)
+
         # endregion
 
         # Define layers

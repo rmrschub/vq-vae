@@ -18,7 +18,7 @@ tfb = tfp.bijectors
 from dvclive import Live
 from dvclive.keras import DVCLiveCallback
 
-from vq_vae import VectorQuantizedVAE
+from triplet_vq_vae import TripletVectorQuantizedVAE
 
 yaml = YAML(typ="safe")
 
@@ -37,7 +37,7 @@ def train():
 
     with strategy.scope():
         # Define, build and compile model within strategy scope
-        model = VectorQuantizedVAE(
+        model = TripletVectorQuantizedVAE(
             input_dims=params.model.input_dims,
             latent_dim=params.model.latent_dim,
             num_embeddings=params.model.num_embeddings,
@@ -45,7 +45,8 @@ def train():
             quantization_loss_factor=params.model.quantization_loss_factor,
             bernstein_order=params.model.bernstein_order,
             alpha=params.model.alpha,
-            random_seed=params.base.random_seed
+            margin=params.model.margin,
+            random_seed=params.base.random_seed,
         )
         model.build((None, 32, 32, 3))
 
@@ -55,7 +56,7 @@ def train():
 
         model.compile(
             optimizer=optimizer,
-            metrics=['commitment_loss', 'coeebook_loss', 'reconstruction_loss', 'total_loss']
+            metrics=['commitment_loss', 'codebook_loss', 'reconstruction_loss', 'triplet_loss', 'total_loss']
         )
 
         # Configure distributed training and test pipelines
@@ -65,8 +66,8 @@ def train():
         global_batch_size = params.train.batch_size_per_replica * strategy.num_replicas_in_sync
 
         train_ds, test_ds = tfds.load('cifar10', split=['train','test'], as_supervised=True)
-        train_ds = train_ds.map(lambda image, label: tf.divide(tf.cast(image, tf.float32), 255.0))            # [0 - 1] range
-        # train_ds = train_ds.map(lambda image, label: (tf.divide(tf.cast(image, tf.float32), 127.5)) - 1.0)      # [-1 to 1] range
+        # train_ds = train_ds.map(lambda image, label: tf.divide(tf.cast(image, tf.float32), 255.0))            # [0 - 1] range
+        train_ds = train_ds.map(lambda image, label: (tf.divide(tf.cast(image, tf.float32), 255.0), label))
         train_ds = train_ds.cache()
         train_ds = train_ds.shuffle(10 * global_batch_size)
         train_ds = train_ds.batch(global_batch_size)
