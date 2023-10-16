@@ -144,12 +144,15 @@ class TripletVectorQuantizedVAE(VectorQuantizedVAE):
 
     def pairwise_l1_distances(self, inputs):
       
-        distances = tf.reduce_sum(
-            tf.subtract(
-                tf.expand_dims(tf.reshape(inputs, (-1, tf.math.reduce_prod(tf.shape(inputs)[1:]))), 1),
-                tf.expand_dims(tf.reshape(inputs, (-1, tf.math.reduce_prod(tf.shape(inputs)[1:]))), 0)
+        distances = tf.cast(
+            tf.reduce_sum(
+                tf.subtract(
+                    tf.expand_dims(tf.reshape(inputs, (-1, tf.math.reduce_prod(tf.shape(inputs)[1:]))), 1),
+                    tf.expand_dims(tf.reshape(inputs, (-1, tf.math.reduce_prod(tf.shape(inputs)[1:]))), 0)
+                ),
+                2
             ),
-            2
+            tf.float32
         )
 
         # Because of computation errors, some distances might be negative so we put everything >= 0.0
