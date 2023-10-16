@@ -10,7 +10,12 @@ stages:
          WORKING_DIR=${base.working_dir}
          bin/mo < src/volcano.tpl > src/volcano.yaml
     deps:
-      - src/volcano.tpl
+      - params.yaml
+      - src/train.py
+      - src/vq_vae.py
+      - src/residual_block.py
+      - src/vector_quantizer.py
+      - src/volcano.yaml
     params:
       - base
       - volcano
@@ -21,12 +26,7 @@ stages:
     cmd: 
       - kubectl apply -f src/volcano.yaml
     deps:
-      - params.yaml
-      - src/train.py
-      - src/vq_vae.py
-      - src/residual_block.py
-      - src/vector_quantizer.py
-      - src/volcano.yaml
+      - src/volcano.tpl
     params:
       - base
       - model
