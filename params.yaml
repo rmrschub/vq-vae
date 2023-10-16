@@ -1,7 +1,7 @@
 base:
   workplace_pvc: resc01-pvc
   working_dir: vq-vae
-  random_seed: 43
+  random_seed: 42
 
 model:
   input_dims: [32, 32, 3]

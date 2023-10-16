@@ -26,6 +26,10 @@ stages:
       - kubectl apply -f src/volcano.yaml
     deps:
       - src/volcano.yaml
+      - src/train.py
+      - src/vq_vae.py
+      - src/residual_block.py
+      - src/vector_quantizer.py
     params:
       - base
       - model
