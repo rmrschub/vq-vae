@@ -18,7 +18,7 @@ tfb = tfp.bijectors
 from dvclive import Live
 from dvclive.keras import DVCLiveCallback
 
-from triplet_vq_vae import TripletVectorQuantizedVAE
+from _vq_vae import VectorQuantizedVAE
 
 yaml = YAML(typ="safe")
 
@@ -37,7 +37,7 @@ def train():
 
     with strategy.scope():
         # Define, build and compile model within strategy scope
-        model = TripletVectorQuantizedVAE(
+        model = VectorQuantizedVAE(
             input_dims=params.model.input_dims,
             latent_dim=params.model.latent_dim,
             num_embeddings=params.model.num_embeddings,
@@ -67,8 +67,8 @@ def train():
         global_batch_size = params.train.batch_size_per_replica * strategy.num_replicas_in_sync
 
         train_ds, test_ds = tfds.load('cifar10', split=['train','test'], as_supervised=True)
-        # train_ds = train_ds.map(lambda image, label: tf.divide(tf.cast(image, tf.float32), 255.0))            # [0 - 1] range
-        train_ds = train_ds.map(lambda image, label: (tf.divide(tf.cast(image, tf.float32), 255.0), label))
+        train_ds = train_ds.map(lambda image, label: tf.divide(tf.cast(image, tf.float32), 255.0))            # [0 - 1] range
+        # train_ds = train_ds.map(lambda image, label: (tf.divide(tf.cast(image, tf.float32), 255.0), label))
         train_ds = train_ds.cache()
         train_ds = train_ds.shuffle(10 * global_batch_size)
         train_ds = train_ds.batch(global_batch_size)
