@@ -18,7 +18,7 @@ tfb = tfp.bijectors
 from dvclive import Live
 from dvclive.keras import DVCLiveCallback
 
-from _vq_vae import VectorQuantizedVAE
+from vq_vae import VectorQuantizedVAE
 
 yaml = YAML(typ="safe")
 
