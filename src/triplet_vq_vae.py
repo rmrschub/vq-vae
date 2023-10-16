@@ -51,7 +51,7 @@ class TripletVectorQuantizedVAE(VectorQuantizedVAE):
 
             # region: Compute triplet loss on codebook indices
             # ham_distances = self.pairwise_ham_distance(codebook_indices)
-            ham_distances = self.pairwise_l1_distance(codebook_indices)
+            ham_distances = self.pairwise_l1_distances(codebook_indices)
             anchor_positive_ham_dist = tf.expand_dims(ham_distances, 2)
             anchor_negative_ham_dist = tf.expand_dims(ham_distances, 1)
             triplet_ham_loss = tf.cast(anchor_positive_ham_dist - anchor_negative_ham_dist + self.ham_margin, dtype=tf.float32)
