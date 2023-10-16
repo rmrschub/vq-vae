@@ -9,8 +9,8 @@ model:
   num_embeddings: 512 
   commitment_cost_factor: 0.25
   quantization_loss_factor: 0.99
-  margin: 10.0
-  ham_margin: 0.3
+  margin: 50.0
+  ham_margin: 0.7
   bernstein_order: 13
   alpha: 0.2
 
