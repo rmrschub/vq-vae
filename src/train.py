@@ -46,6 +46,7 @@ def train():
             bernstein_order=params.model.bernstein_order,
             alpha=params.model.alpha,
             margin=params.model.margin,
+            ham_margin=params.model.ham_margin,
             random_seed=params.base.random_seed,
         )
         model.build((None, 32, 32, 3))
