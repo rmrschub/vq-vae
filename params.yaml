@@ -10,7 +10,7 @@ model:
   commitment_cost_factor: 0.25
   quantization_loss_factor: 0.99
   margin: 50.0
-  ham_margin: 0.7
+  ham_margin: 20.0
   bernstein_order: 13
   alpha: 0.2
 

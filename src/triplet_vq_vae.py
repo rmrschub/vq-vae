@@ -50,7 +50,8 @@ class TripletVectorQuantizedVAE(VectorQuantizedVAE):
             z_e, codebook_indices, z_q, p_x_given_z_q = self(imgs, training=True)
 
             # region: Compute triplet loss on codebook indices
-            ham_distances = self.pairwise_ham_distance(codebook_indices)
+            # ham_distances = self.pairwise_ham_distance(codebook_indices)
+            ham_distances = self.pairwise_l1_distance(codebook_indices)
             anchor_positive_ham_dist = tf.expand_dims(ham_distances, 2)
             anchor_negative_ham_dist = tf.expand_dims(ham_distances, 1)
             triplet_ham_loss = tf.cast(anchor_positive_ham_dist - anchor_negative_ham_dist + self.ham_margin, dtype=tf.float32)
@@ -137,6 +138,22 @@ class TripletVectorQuantizedVAE(VectorQuantizedVAE):
             2),  
             tf.cast(tf.math.reduce_prod(tf.shape(inputs)[1:]), tf.float32)
         )
+
+        return distances
+
+
+    def pairwise_l1_distances(self, inputs):
+      
+        distances = tf.reduce_sum(
+            tf.subtract(
+                tf.expand_dims(tf.reshape(inputs, (-1, tf.math.reduce_prod(tf.shape(inputs)[1:]))), 1),
+                tf.expand_dims(tf.reshape(inputs, (-1, tf.math.reduce_prod(tf.shape(inputs)[1:]))), 0)
+            ),
+            2
+        )
+
+        # Because of computation errors, some distances might be negative so we put everything >= 0.0
+        distances = tf.maximum(distances, 0.0)
 
         return distances
 
