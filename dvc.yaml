@@ -12,7 +12,7 @@ stages:
     deps:
       - params.yaml
       - src/train.py
-      - src/vq_vae.py
+      - src/cat_vq_vae.py
       - src/triplet_vq_vae.py
       - src/residual_block.py
       - src/vector_quantizer.py
@@ -28,7 +28,7 @@ stages:
     deps:
       - src/volcano.yaml
       - src/train.py
-      - src/vq_vae.py
+      - src/cat_vq_vae.py
       - src/triplet_vq_vae.py
       - src/residual_block.py
       - src/vector_quantizer.py

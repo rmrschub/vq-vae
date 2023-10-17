@@ -5,8 +5,8 @@ base:
 
 model:
   input_dims: [32, 32, 3]
-  latent_dim: 2
-  num_embeddings: 16 
+  latent_dim: 256
+  num_embeddings: 128 
   commitment_cost_factor: 0.25
   quantization_loss_factor: 0.99
   margin: 50.0
