@@ -93,7 +93,8 @@ class CategoricalVectorQuantizedVAE(tf.keras.Model):
         codebook_idx = self._indexer(z_e)
 
         # Quantized latent representation with output shape (batch, 8, 8, latent_dim)
-        z_q = self._codebook(codebook_idx.sample(seed=self.random_seed))
+        z_q = self._codebook(codebook_idx.mode())
+        # z_q = self._codebook(codebook_idx.sample(seed=self.random_seed))
 
         # Reconstructed images with output shape (batch, 32, 32, 3)
         x_hat = self._decoder(z_e + tf.stop_gradient(z_q - z_e)) 
