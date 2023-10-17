@@ -106,7 +106,7 @@ class CategoricalVectorQuantizedVAE(tf.keras.Model):
 
             kl_loss = tf.reduce_mean(self._prior.kl_divergence(codebook_idx))
             commitment_loss = tf.reduce_mean((z_e - tf.stop_gradient(z_q)) ** 2)
-            codebook_loss = stf.reduce_mean((tf.stop_gradient(z_e) - z_q) ** 2)
+            codebook_loss = tf.reduce_mean((tf.stop_gradient(z_e) - z_q) ** 2)
             reconstruction_loss = tf.reduce_mean(tf.keras.losses.MeanSquaredError(reduction=tf.keras.losses.Reduction.NONE)(x, x_hat))           
 
             total_loss = sum([
