@@ -39,6 +39,11 @@ class CategoricalVectorQuantizedVAE(tf.keras.Model):
             tfkl.Conv2D(filters=256, kernel_size=4, strides=2, padding='same'),
             ResidualBlock(filters=256, kernel_size=(3, 3), stride=(1, 1), alpha=0.2),
             ResidualBlock(filters=256, kernel_size=(3, 3), stride=(1, 1), alpha=0.2),
+            tfkl.Conv2D(filters=self.latent_dim, kernel_size=1, strides=1, padding='same')],
+            name='encoder', 
+        )                
+            
+        self._indexer = tf.keras.Sequential([            
             tfkl.Conv2D(filters=self.num_embeddings, kernel_size=1, strides=1, padding='same', activation=None),
             tfpl.DistributionLambda(
                 make_distribution_fn=lambda t: tfd.Categorical(
@@ -49,7 +54,7 @@ class CategoricalVectorQuantizedVAE(tf.keras.Model):
                     allow_nan_stats=True,
                 ),
             )],
-            name='encoder', 
+            name='indexer', 
         )
 
         self._codebook = tfkl.Embedding(
@@ -84,36 +89,38 @@ class CategoricalVectorQuantizedVAE(tf.keras.Model):
 
     def call(self, inputs, training=None, mask=None):
         # Categorical over codebook indices with event shape: (batch, 8, 8)
-        p_i_given_x = self._encoder(inputs)
+        z_e = self._encoder(inputs)
+        codebook_idx = self._indexer(z_e)
 
         # Quantized latent representation with output shape (batch, 8, 8, latent_dim)
-        quantized_codes = self._codebook(p_i_given_x.sample(seed=self.random_seed))
+        z_q = self._codebook(codebook_idx.sample(seed=self.random_seed))
 
         # Reconstructed images with output shape (batch, 32, 32, 3)
-        x_hat = self._decoder(quantized_codes) 
+        x_hat = self._decoder(z_e + tf.stop_gradient(z_q - z_e)) 
 
-        return p_i_given_x, quantized_codes, x_hat
+        return z_e, codebook_idx, z_q, x_hat
 
     def train_step(self, x):
         with tf.GradientTape(persistent=True, watch_accessed_variables=True) as tape:
-            p_i_given_x, quantized_codes, x_hat = self(x, training=True)
+            z_e, codebook_idx, z_q, x_hat = self(x, training=True)
 
-            reconstruction_loss = tf.reduce_mean(tf.keras.losses.MeanSquaredError(reduction=tf.keras.losses.Reduction.NONE)(x, x_hat))
-            kl_loss = tf.reduce_mean(self._prior.kl_divergence(p_i_given_x))
+            kl_loss = self.kl_loss_factor * tf.reduce_mean(self._prior.kl_divergence(codebook_idx))
+            commitment_loss = self.commitment_loss_factor * tf.reduce_mean((z_e - tf.stop_gradient(z_q)) ** 2)
+            codebook_loss = self.quantization_loss_factor * tf.reduce_mean((tf.stop_gradient(z_e) - z_q) ** 2)
+            reconstruction_loss = tf.reduce_mean(tf.keras.losses.MeanSquaredError(reduction=tf.keras.losses.Reduction.NONE)(x, x_hat))           
 
             total_loss = sum([
                 kl_loss,
                 reconstruction_loss,
-                # self.commitment_cost_factor * commitment_loss, 
-                # self.quantization_loss_factor * codebook_loss, 
+                self.commitment_cost_factor * commitment_loss, 
+                self.quantization_loss_factor * codebook_loss, 
             ])
 
         grads = tape.gradient(total_loss, self.trainable_variables)
         self.optimizer.apply_gradients(zip(grads, self.trainable_variables))
 
-        # self.commitment_loss_tracker.update_state(commitment_loss)
-        # self.codebook_loss_tracker.update_state(codebook_loss)
-
+        self.commitment_loss_tracker.update_state(commitment_loss)
+        self.codebook_loss_tracker.update_state(codebook_loss)
         self.kl_loss_tracker.update_state(kl_loss)
         self.reconstruction_loss_tracker.update_state(reconstruction_loss)
         self.total_loss_tracker.update_state(total_loss)    
@@ -121,8 +128,8 @@ class CategoricalVectorQuantizedVAE(tf.keras.Model):
         return {
             "kl_loss": self.kl_loss_tracker.result(),
             "reconstruction_loss": self.reconstruction_loss_tracker.result(),
-            # "commitment_loss": self.commitment_loss_tracker.result(),
-            # "codebook_loss": self.codebook_loss_tracker.result(),
+            "commitment_loss": self.commitment_loss_tracker.result(),
+            "codebook_loss": self.codebook_loss_tracker.result(),
             "total_loss": self.total_loss_tracker.result(),
         }
 
@@ -136,18 +143,16 @@ if __name__ == "__main__":
     
 
     _, test_ds = tfds.load('cifar10', split=['train','test'], as_supervised=True)
-    test_ds = test_ds.map(lambda image, label: tf.divide(tf.cast(image, tf.float32), 255.0)).batch(1)  
+    test_ds = test_ds.map(lambda image, label: tf.divide(tf.cast(image, tf.float32), 255.0)).batch(64)
 
     model = CategoricalVectorQuantizedVAE(
         input_dims=(32, 32, 3),
-        latent_dim=128,
-        num_embeddings=64,
-        commitment_cost_factor=0.25,
+        latent_dim=256,
+        num_embeddings=128,
+        commitment_loss_factor=0.25,
         quantization_loss_factor=0.99,
-        alpha=0.2,
-        bernstein_order=3,
+        kl_loss_lfactor=1.0
         random_seed=43,
-        margin=10
     )
 
     model.build((None, 32, 32, 3))
