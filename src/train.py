@@ -41,12 +41,9 @@ def train():
             input_dims=params.model.input_dims,
             latent_dim=params.model.latent_dim,
             num_embeddings=params.model.num_embeddings,
-            commitment_cost_factor=params.model.commitment_cost_factor,
+            commitment_loss_factor=params.model.commitment_cost_factor,
             quantization_loss_factor=params.model.quantization_loss_factor,
-            bernstein_order=params.model.bernstein_order,
-            alpha=params.model.alpha,
-            margin=params.model.margin,
-            ham_margin=params.model.ham_margin,
+            kl_loss_factor=params.model.kl_loss_factor,
             random_seed=params.base.random_seed,
         )
         model.build((None, 32, 32, 3))

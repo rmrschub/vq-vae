@@ -7,12 +7,10 @@ model:
   input_dims: [32, 32, 3]
   latent_dim: 256
   num_embeddings: 128 
-  commitment_cost_factor: 0.25
+  commitment_loss_factor: 0.25
   quantization_loss_factor: 0.99
-  margin: 50.0
-  ham_margin: 20.0
-  bernstein_order: 13
-  alpha: 0.2
+  kl_loss_factor: 1.0
+
 
 volcano:
   job_id: 1
