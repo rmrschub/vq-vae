@@ -41,7 +41,7 @@ def train():
             input_dims=params.model.input_dims,
             latent_dim=params.model.latent_dim,
             num_embeddings=params.model.num_embeddings,
-            commitment_loss_factor=params.model.commitment_cost_factor,
+            commitment_loss_factor=params.model.commitment_loss_factor,
             quantization_loss_factor=params.model.quantization_loss_factor,
             kl_loss_factor=params.model.kl_loss_factor,
             random_seed=params.base.random_seed,
