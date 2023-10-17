@@ -104,16 +104,16 @@ class CategoricalVectorQuantizedVAE(tf.keras.Model):
         with tf.GradientTape(persistent=True, watch_accessed_variables=True) as tape:
             z_e, codebook_idx, z_q, x_hat = self(x, training=True)
 
-            kl_loss = self.kl_loss_factor * tf.reduce_mean(self._prior.kl_divergence(codebook_idx))
-            commitment_loss = self.commitment_loss_factor * tf.reduce_mean((z_e - tf.stop_gradient(z_q)) ** 2)
-            codebook_loss = self.quantization_loss_factor * tf.reduce_mean((tf.stop_gradient(z_e) - z_q) ** 2)
+            kl_loss = tf.reduce_mean(self._prior.kl_divergence(codebook_idx))
+            commitment_loss = tf.reduce_mean((z_e - tf.stop_gradient(z_q)) ** 2)
+            codebook_loss = stf.reduce_mean((tf.stop_gradient(z_e) - z_q) ** 2)
             reconstruction_loss = tf.reduce_mean(tf.keras.losses.MeanSquaredError(reduction=tf.keras.losses.Reduction.NONE)(x, x_hat))           
 
             total_loss = sum([
-                kl_loss,
-                reconstruction_loss,
-                self.commitment_cost_factor * commitment_loss, 
+                self.kl_loss_factor * kl_loss,
+                self.commitment_loss_factor * commitment_loss, 
                 self.quantization_loss_factor * codebook_loss, 
+                reconstruction_loss,
             ])
 
         grads = tape.gradient(total_loss, self.trainable_variables)
@@ -151,7 +151,7 @@ if __name__ == "__main__":
         num_embeddings=128,
         commitment_loss_factor=0.25,
         quantization_loss_factor=0.99,
-        kl_loss_lfactor=1.0
+        kl_loss_factor=1.0,
         random_seed=43,
     )
 
