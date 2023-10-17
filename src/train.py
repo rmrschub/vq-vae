@@ -18,7 +18,7 @@ tfb = tfp.bijectors
 from dvclive import Live
 from dvclive.keras import DVCLiveCallback
 
-from vq_vae import VectorQuantizedVAE
+from cat_vq_vae import CategoricalVectorQuantizedVAE
 
 yaml = YAML(typ="safe")
 
@@ -37,7 +37,7 @@ def train():
 
     with strategy.scope():
         # Define, build and compile model within strategy scope
-        model = VectorQuantizedVAE(
+        model = CategoricalVectorQuantizedVAE(
             input_dims=params.model.input_dims,
             latent_dim=params.model.latent_dim,
             num_embeddings=params.model.num_embeddings,
@@ -57,7 +57,7 @@ def train():
 
         model.compile(
             optimizer=optimizer,
-            metrics=['commitment_loss', 'codebook_loss', 'reconstruction_loss', 'triplet_loss', 'triplet_ham_loss', 'total_loss']
+            metrics=['reconstruction_loss', 'kl_loss', 'total_loss']
         )
 
         # Configure distributed training and test pipelines
@@ -114,7 +114,7 @@ def train():
         )
 
     # Save trained model(s)
-    write_model_path = 'model_{}_weights.h5'.format(task_id) if task_id==0 else 'tmp/model_{}_weights.h5'.format(task_id)
+    write_model_path = 'cat_model_{}_weights.h5'.format(task_id) if task_id==0 else 'tmp/cat_model_{}_weights.h5'.format(task_id)
     model.save_weights(write_model_path)
 
 if __name__ == "__main__":
